@@ -1,0 +1,2 @@
+example 2019/07/24 18:43:42 logging-file.go:18: This is a regular message
+example 2019/07/24 18:43:42 logging-file.go:19: This is a fatal error
