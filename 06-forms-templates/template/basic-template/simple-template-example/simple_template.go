@@ -21,7 +21,7 @@ func diaplayPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse a template for later use 
-	t := template.Must(template.ParseFiles("templates/simple.html"))
+	t := template.Must(template.ParseFiles("simple.html"))
 
 	// write to http output using template and dataset 
 	// data will be escaped 

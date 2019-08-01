@@ -15,7 +15,7 @@ func main() {
 	done := make(chan bool) // indicates when you are finished 
 	until := time.After(5 * time.Second)
 
-	go send(msg, done) // passes wto channels into send 
+	go send(msg, done) // passes two channels into send 
 
 	for {
 		select {

@@ -49,3 +49,6 @@ go run main.go > index.html
 go fmt ./...
 
 
+// go test
+
+go test –v -cover // coverage flag
