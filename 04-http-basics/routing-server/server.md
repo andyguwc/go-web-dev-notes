@@ -65,10 +65,6 @@ If we do this:
 helloHandler := HandlerFunc(hello)
 then helloHandler becomes a Handler.
 
-
-# Chaining Handlers
-
-
 # Multiplexers
 If handler is nil, default DefaultServeMux is used
 

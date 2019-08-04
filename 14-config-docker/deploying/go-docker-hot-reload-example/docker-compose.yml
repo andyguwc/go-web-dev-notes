@@ -1,0 +1,14 @@
+version: '3.6'
+
+#  We first specify the image to use; the latest image of the API that will be created when we build the Docker image from our Dockerfile
+
+# We expose port 5000 and map it to port 5000 on the Docker container so that we can reach our API from outside of the Docker container
+
+# The last line is a volume mount. This is what makes the hot reloading work inside of a Docker container! This links our current working directory to the directory inside of the Docker container so that any file changes that happen on our local machine also happen inside of the Docker container.
+services:
+    api:
+        image: api:latest
+        ports:
+            - 5000:5000
+        volumes:
+            - ./:/go/src/github.com/Zach-Johnson/go-docker-hot-reload-example

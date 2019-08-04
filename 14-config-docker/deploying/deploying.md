@@ -30,3 +30,20 @@ completes.
 Push the code to Heroku
 heroku create ws-h
 git push heroku master
+
+
+# Deploy to Google App Engine
+
+Change code: use google libraries
+Create app.yml file
+Create GAE application
+Push code to GAE application
+
+
+Because GAE will take over your entire application, you won’t have control over how
+it’s started or which port it runs on. In fact, you’re not going to be writing a standalone
+application at all—what you’ll be writing is simply a package to be deployed on
+GAE. As a result, you’ll need to change the package name to something other than
+main (main is only for standalone Go programs)
+
+
