@@ -37,6 +37,41 @@ func goPrint2() {
     go printLetters2()
 }
 
+Goroutines can also be defined as function ligerals 
+func main() {
+	go count(10, 30, 10)
+	go func() {
+		count(40, 60, 10)
+	}()
+	...
+}
+
+
+If these values are updated outside of the closure, it may create
+race conditions causing the goroutine to read unexpected values by the time it is scheduled
+to run.
+
+The following snippet shows an example where the goroutine closure captures the variable j from the loop:
+func main() {
+	starts := []int{10,40,70,100}
+	for _, j := range starts{
+		go func() {
+			count(j, j+20, 10)
+		}()
+	}
+}
+
+Since j is updated with each iteration, it is impossible to determine what value will be read by the closure. In most cases, the goroutine closures will see the last updated value of j by the time they are executed. This can be easily fixed by passing the variable as a parameter in the function literal for the goroutine, as shown here
+
+func main() {
+	starts := []int{10,40,70,100}
+	for _, j := range starts{
+		go func(s int) {
+			count(s, s+20, 10)
+		}(j)
+	}
+}
+
 
 ## Benchmark 
 The benchmarks are worse because of the same issue I mentioned earlier: scheduling
@@ -83,11 +118,24 @@ func main() {
 	wg.Wait()
 }
 ```
+## Goroutine Runtime Scheduling
+
+Go's runtime scheduler uses a form of cooperative scheduling to schedule goroutines. 
+
+By default, the scheduler will allow a running goroutine to execute to completion. However, the scheduler will automatically yield to another goroutine for execution if one of the following events occurs:
+- A go statement is encountered in the executing goroutine
+- A channel operation is encountered (channels are covered later)
+- A blocking system call (file or network IO for instance) is encountered
+- After the completion of a garbage collection cycle
+
+The scheduler will schedule a queued goroutines ready to enter execution when one of the previous events is encountered in a running goroutine. It is important to point out that the scheduler makes no guarantee of the order of execution of goroutines. 
+
+When the following code snippet is executed, for instance, the output will be printed in an arbitrary order for each run.
+
 
 # Channels
 Channels are typed values that allow goroutines to communicate with each other.
-Channels are allocated using make, and the resulting value is a reference to an underlying
-data structure. This, for example, allocates a channel of integers:
+Channels are allocated using make, and the resulting value is a reference to an underlying data structure. This, for example, allocates a channel of integers:
 ch := make(chan int)
 
 Channels are, by default, unbuffered. If an optional integer parameter is provided, a
@@ -95,13 +143,38 @@ buffered channel of the given size is allocated instead. This creates a buffered
 integers with the size 10:
 ch := make(chan int, 10)
 
+
+## Unbuffered Channel
 Unbuffered channels are synchronous. You can think of unbuffered channels as a box
 that can contain only one thing at a time. Once a goroutine puts something into this
 box, no other goroutines can put anything in, unless another goroutine takes out
-whatever is inside it first. This means if another goroutine wants to put in something
-else when the box contains something already, it will block and go to sleep until the
-box is empty.
+whatever is inside it first. This means if another goroutine wants to put in something else when the box contains something already, it will block and go to sleep until the box is empty.
 
+ch := make(chan int) // unbuffered channel
+- If the channel is empty, the receiver blocks until there is data
+- The sender can send only to an empty channel and blocks until the next receive
+operation
+- When the channel has data, the receiver can proceed to receive the data.
+
+Recall that the sender blocks immediately upon sending to an unbuffered channel. This
+means any subsequent statement, to receive from the channel for instance, becomes
+unreachable, causing a deadlock. The following code shows the proper way to send to an unbuffered channel:
+
+func main() {
+	ch := make(chan int)
+	go func() { ch <- 12 }()
+	fmt.Println(<-ch)
+}
+
+
+## Buffered Channels
+c := make(chan int, 3)
+
+- When the channel is empty, the receiver blocks until there is at least one element
+- The sender always succeeds as long as the channel is not at capacity
+- When the channel is at capacity, the sender blocks until at least one element is received
+
+## Unidirectional Channels
 
 This allocates a send-only channel of strings:
 ch := make(chan <- string)
@@ -109,13 +182,16 @@ ch := make(chan <- string)
 This allocates a receive-only channel of strings:
 ch := make(<-chan string)
 
-
-## Buffered Channels
-c := make(chan int, 3)
-
+// pings is a channle for receives
+// pongs is a channel for sends 
+func pong(pings <-chan string, pongs chan<- string) {
+    msg := <-pings
+    pongs <- msg
+}
 
 ## Selecting Channels 
 Select is like a switch statement for channels 
+
 
 ## Closing Channels
 Channels can be closed using the close built-in function. Closing a channel indicates
@@ -125,6 +201,80 @@ panic.
 
 A closed channel is never blocked and always returns the zero value for the
 channel’s type.
+
+
+// Example implementing a word histogram. Reads the words from the data slice and on a separate goroutine collects the occurrence of each word
+
+func main() {
+	data := []string{
+		"The yellow fish swims slowly in the water",
+		"The brown dog barks loudly after a drink ...",
+		"The dark bird bird of prey lands on a small ...",
+	}
+
+	histogram := make(map[string]int)
+
+	done := make(chan bool)
+
+	//splits and count words
+	go func() {
+		for _, line := range data {
+			words := strings.Split(line, " ")
+			for _, word := range words {
+				word = strings.ToLower(word)
+				histogram[word]++
+			}
+		}
+	done <- true
+	}()
+
+	if <-done {
+		for k, v := range histogram {
+			fmt.Printf("%s\t(%d)\n", k, v)
+		}
+	}
+
+## Streaming Data
+Stream data from one goroutine to another.
+- Continuously send data on a channel
+- Continuously receive data from that channel
+- Signal the end of the stream so receiver may stop
+
+
+## Generator Functions
+In this approach, a goroutine is wrapped in a function which generates values that are sent via a channel returned by the function. The consumer goroutine receives these values as they are generated.
+
+// generator function that produces data
+func words(data []string) <-chan string {
+	out := make(chan string)
+	go func() {
+		defer close(out) // closes channel upon fn return
+		for _, line := range data {
+			words := strings.Split(line, " ")
+			for _, word := range words {
+				word = strings.ToLower(word)
+				out <- word
+			}
+		}
+	}()
+	return out
+}
+
+
+## Select from Multiple Channels
+select {
+	case <send_ or_receive_expression>:
+	default:
+}
+
+# Wait Group 
+Sometimes when working with goroutines, you may need to create a synchronization
+barrier where you wish to wait for all running goroutines to finish before proceeding. The sync.WaitGroup type is designed for such a scenario, allowing multiple goroutines torendezvous at specific point in the code. Using WaitGroup requires three things:
+- The number of participants in the group via the Add method
+- Each goroutine calls the Done method to signal completion
+- Use the Wait method to block until all goroutines are done
+
+
 
 # Race Conditions
 A race condition exists when the program depends on a specific sequence or timing
@@ -136,4 +286,14 @@ If two or more processes or threads try to modify the shared resource at the
 same time, the one that gets to the resource first will behave as expected but the
 other processes won’t. Because we can’t predict which process gets the resource
 first, the system won’t behave consistently.
+
+## Debugging Race Conditions
+
+The compiler's output shows the offending goroutine locations that caused the race condition
+
+go run -race sync1.go
+
+
+
+
 
