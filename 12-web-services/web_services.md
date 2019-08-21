@@ -106,3 +106,46 @@ GRPC has the following benefits over traditional HTTP/REST/JSON architecture:
 - Usage of protobufs for strict typing of data
 - Streaming of requests or responses is possible instead of request/response transactions
 
+# Network Programming Basics
+
+## Addressing
+One of the basic primitives, when doing network programming, is the address. The types and functions of the net package use a string literal to represent an address such as "127.0.0.1". The address can also include a service port separated by a colon such as "74.125.21.113:80".
+
+## The net.Conn Type
+The net.Conn interface represents a generic connection established between two nodes on the network. It implements io.Reader and io.Writer interfaces which allow connected nodes to exchange data using streaming IO primitives. The net package offers network protocol-specific implementations of the net.Conn interface such as IPConn, UDPConn, and TCPConn.
+
+## Dialing a connection
+Client programs use the net.Dial function, which has the following signature, to connect to a host service over the network:
+func Dial(network, address string) (Conn, error)
+
+The net.Dial function returns an implementation of the net.Conn interface that
+matches the specified network parameter.
+
+Because the net.Conn type implements the io.Reader and io.Writer, it can be used to
+both send data and receive data using streaming IO semantics. For example we can use conn.Write([]byte(httpRequest)) to send a HTTP request to the server.
+
+
+## Listen for Incoming Connections
+
+When creating a service program, one the first steps is to announce the port which the service will use to listen for incoming requests from the network.
+
+func Listen(network, laddr string) (net.Listener, error)
+
+The second parameter is the local host address for the service. The local address can be specified without an IP address such as ":4040". Omitting the IP address of the host means that the service is bound to all network card interfaces installed on the host.
+
+
+Accept client connections
+The net.Listener interface uses the Accept method to block indefinitely until a new
+connection arrives from a client
+
+
+## Example TCP API Server
+
+
+Use raw TCP to communicate between client and server
+Develop a simple text-based protocol, over TCP, for communication
+Clients can query the server for global currency information with text commands
+Use a goroutine per connection to handle connection concurrency
+Maintain connection until the client disconnects
+
+

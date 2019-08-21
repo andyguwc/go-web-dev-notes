@@ -1,3 +1,16 @@
+
+/* 
+Bridge pattern
+
+A PrinterAPI that accepts a message to print
+An implementation of the API that simply prints the message to the console
+An implementation of the API that prints to an io.Writer interface
+A Printer abstraction with a Print method to implement in printing types
+
+*/
+
+
+
 package structural
 
 import (
@@ -5,6 +18,8 @@ import (
 	"fmt"
 	"io"
 )
+
+
 
 //-----------------------------------------------------------------
 
@@ -41,6 +56,10 @@ type PrinterAbstraction interface {
 }
 
 //-----------------------------------------------------------------
+
+// This printer must simply forward the message to the PrinterAPI interface stored without any modification. In our test, we are using two
+// implementations of PrinterAPI--one that prints to the console and one that writes to an
+// io.Writer interface
 
 type NormalPrinter struct {
 	Msg     string

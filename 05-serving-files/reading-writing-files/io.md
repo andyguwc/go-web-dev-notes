@@ -189,3 +189,93 @@ if err != nil {
 defer f1.Close()
 ```
 
+
+## Writing and Reading
+
+Write as string
+
+Write as bytes
+
+Read file line by line
+
+
+## Standard Input, Output, and Error (OS Package)
+The os package includes three pre-declared variables, os.Stdin, os.Stdout, and
+os.Stderr, that represent file handles for standard input, output, and error of the OS respectively
+
+```
+func main() {
+    f1, err := os.Open("./file0.go")
+    if err != nil {
+        fmt.Println("Unable to open file:", err)
+        os.Exit(1)
+    }
+    defer f1.Close()
+    n, err := io.Copy(os.Stdout, f1)
+    if err != nil {
+        fmt.Println("Failed to copy:", err)
+        os.Exit(1)
+    }
+    fmt.Printf("Copied %d bytes from %s \n", n, f1.Name())
+}
+```
+
+# Formatted IO with fmt Package
+
+## Printing to io.Writer interfaces
+
+The fmt package offers several functions designed to write text data to arbitrary
+implementations of io.Writer. The fmt.Fprint and fmt.Fprintln functions write text
+with the default format while fmt.Fprintf supports format specifiers.
+
+
+
+# Buffered IO
+
+Unbuffered operations mean each read and write operation could be negatively impacted by the latency of the underlying OS to handle IO requests. Buffered operations, on the other hand, reduces latency by buffering data in internal memory during IO operations. The bufio package offers functions for buffered read and write IO operations.
+
+## Buffered Writers and Readers
+
+The bufio package offers several functions to do buffered writing of IO streams using an io.Writer interface. The following snippet creates a text file and writes to it using buffered IO
+
+Use the constructor function
+bufio.NewWriterSize(w io.Writer, n int) to specify the internal buffer size
+
+
+## Scanning the Buffer
+The bufio package also makes available primitives that are used to scan and tokenize
+buffered input data from an io.Reader source. The bufio.Scanner type scans input data
+using the Split method to define tokenization strategies.
+
+
+# In Memory IO
+The bytes package offers common primitives to achieve streaming IO on blocks of bytes, stored in memory, represented by the bytes.Buffer type.
+
+Since the bytes.Buffer type implements both io.Reader and io.Writer interfaces it is a great option to stream data into or out of memory using streaming IO primitives.
+
+
+# Gob Binary Data
+The gob package provides an encoding format that can be used to convert complex Go data types into binary. Gob is self-describing, meaning each encoded data item is accompanied by a type description. The encoding process involves streaming the gob-encoded data to an io.Writer so it can be written to a resource for future consumption.
+
+```
+enc := gob.NewEncoder(file).
+Encoding the data is done by simply calling enc.Encode(books) which streams the
+encoded data to the provide file.
+```
+
+Decoding gob data by creating a dec := gob.NewDecoder(file)
+```
+func main() {
+    file, err := os.Open("book.dat")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    var books []Book
+    dec := gob.NewDecoder(file)
+    if err := dec.Decode(&books); err != nil {
+        fmt.Println(err)
+        return
+    }
+}
+```

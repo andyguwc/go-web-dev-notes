@@ -1,4 +1,3 @@
-
 /*
 
 Adapter Pattern
@@ -33,7 +32,7 @@ func (l *MyLegacyPrinter) Print(s string) (newMsg string) {
 }
 
 //------------------------------------------------------------------------
-
+// new interface we need to adapt to 
 type NewPrinter interface {
 	PrintStored() string
 }
